@@ -5,10 +5,11 @@
 
 
 **Description**
-A tool to convert your bilingual xlsx file into an XLIFF file
-It allows you to perform QA via xBench
-It will put the 'TextID' and 'EXTRA' in the 'note' part of the translatable (if such columns were found)
-It runs locally and does not transfer any data outside of your computer.
+A tool to convert your bilingual xlsx file into an XLIFF file.
+
+It allows you to perform QA via xBench;
+It will put the 'TextID' and 'EXTRA' in the 'note' part of the translatable (if such columns were found);
+It runs locally and does not transfer any data outside of your computer;
 It is written in Python, but it doesn't require Python to be installed on your machine. It is  compiled into an *.exe to run on any computer. It can be compiled for other platforms (macOS, Linux, etc.) from the source code.
 
 **What it does**
