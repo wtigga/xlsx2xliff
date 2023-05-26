@@ -16,9 +16,9 @@ Takes multi-lingual Excel as an input. Scans the headers to allow you to select 
 It will iterate over every page in the excel, so the headers should be the same across the pages.
 
 **How to use**
-1.Open the source Excel file with the 'Select Excel File' button
-2.Choose where to save the output XLIFF with the 'Save XLIFF to' button
-3.Click 'Read XLSX headers' to populate the drop down menus below.
-4.Select your Source and Target language columns with the drop down menus.
-5.Clicl 'Save to XLIFF' to save the file.
+1. Open the source Excel file with the 'Select Excel File' button
+2. Choose where to save the output XLIFF with the 'Save XLIFF to' button
+3. Click 'Read XLSX headers' to populate the drop down menus below.
+4. Select your Source and Target language columns with the drop down menus.
+5. Clicl 'Save to XLIFF' to save the file.
 Once the file is saved, the program will shut down, because I'm a crappy coder and it will behave oddly if stays alive.
