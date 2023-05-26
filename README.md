@@ -1,6 +1,9 @@
 # xlsx2xliff
 (under development) Convert your bilingual Excel files into an XLIFF with GUI-based script. Friendly and easy to use.
 
+![image](https://github.com/wtigga/xlsx2xliff/assets/7037184/61a60c47-a94f-47c1-8f55-6a56a327c572)
+
+
 **Description**
 A tool to convert your bilingual xlsx file into an XLIFF file
 It allows you to perform QA via xBench
