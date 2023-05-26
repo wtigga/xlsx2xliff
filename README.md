@@ -5,6 +5,7 @@
 
 
 **Description**
+
 A tool to convert your bilingual xlsx file into an XLIFF file.
 
 It allows you to perform QA via xBench;
@@ -13,7 +14,9 @@ It runs locally and does not transfer any data outside of your computer;
 It is written in Python, but it doesn't require Python to be installed on your machine. It is  compiled into an *.exe to run on any computer. It can be compiled for other platforms (macOS, Linux, etc.) from the source code.
 
 **What it does**
-Takes multi-lingual Excel as an input. Scans the headers to allow you to select which one to use as a source and as a target. And saves a file in XLIFF 1.2 format.
+Takes multi-lingual Excel as an input. 
+Scans the headers to allow you to select which one to use as a source and as a target. 
+And saves a file in XLIFF 1.2 format.
 It will iterate over every page in the excel, so the headers should be the same across the pages.
 
 **How to use**
