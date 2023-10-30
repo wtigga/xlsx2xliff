@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import threading
 import tkinter as tk
 import webbrowser
 import xml.dom.minidom as minidom
@@ -12,8 +13,8 @@ from tkinter import ttk
 
 import pandas as pd
 
-script_version = '0.1'
-modification_date = '2023-05-26'
+script_version = '0.2'
+modification_date = '2023-10-30'
 script_name_short = 'Excel2XLIFF'
 script_name = str(script_name_short + ', v' + script_version + ', ' + modification_date)
 
@@ -41,15 +42,31 @@ additional_columns = ['TextId', 'EXTRA']
 
 def select_excel_file():
     global excel_file_path
-    excel_file_path = filedialog.askopenfilename(filetypes=[("Excel Files", "*.xlsx;*.xls")])
-    path_entry.delete(0, tk.END)  # Clear the current text in the entry field
-    path_entry.insert(tk.END, excel_file_path)  # Insert the selected file path
-    print('File selected: ' + str(excel_file_path))
+
+    def main_logic():
+        global excel_file_path
+        disable_all_buttons()
+        excel_file_path = filedialog.askopenfilename(filetypes=[("Excel Files", "*.xlsx;*.xls")])
+        path_entry.delete(0, tk.END)  # Clear the current text in the entry field
+        path_entry.insert(tk.END, excel_file_path)  # Insert the selected file path
+        get_headers()
+        print('File selected: ' + str(excel_file_path))
+        enable_all_buttons()
+
+    try:
+        main_thread = threading.Thread(target=main_logic)
+        main_thread.start()
+    except Exception as exp:
+        # Show popup window with error message
+        messagebox.showerror("Error", str(exp))
 
 
 def select_xliff_file():
     global xliff_file_path
-    xliff_file_path = filedialog.asksaveasfilename(defaultextension=".xliff", filetypes=[("XLIFF files", "*.xliff")])
+    xliff_file_path = filedialog.asksaveasfilename(
+        defaultextension=".xliff",
+        filetypes=[("XLIFF files", "*.xliff")],
+        initialfile=output_filename)
     path_entry_xliff.delete(0, tk.END)  # Clear the current text in the entry field
     path_entry_xliff.insert(tk.END, xliff_file_path)  # Insert the selected file path
     print('XLIFF output selected: ' + str(xliff_file_path))
@@ -154,12 +171,14 @@ def excel_to_xliff():
         # Create the target element and set the target text if it is not None
         if target_text is not None:
             target_elem = ET.SubElement(trans_unit, 'target')
-            if target_text.strip().lower() != 'nan':
-                target_elem.text = target_text.strip()
-                target_elem.set('state', 'translated')
+            if isinstance(target_text, str):
+                if target_text.strip().lower() != 'nan':
+                    target_elem.text = target_text.strip()
+                    target_elem.set('state', 'translated')
             else:
                 # Set the target element as self-closing tag if the text is 'nan'
-                target_elem.set('state', 'translated', selfClosing="yes")
+                target_elem.set('state', 'translated')
+                target_elem.set('selfClosing', 'yes')  # Set the selfClosing attribute if needed
 
         # Create the note element and set the content from additional columns
         note_content = '\n'.join(str(row[col]) for col in additional_columns if col in combined_df.columns)
@@ -184,14 +203,32 @@ def excel_to_xliff():
     with open(xliff_file_path, 'w', newline='\n', encoding='utf-8') as file:
         file.write(xml_str_prettified)
     messagebox.showinfo("XLIFF Saved", ("Saved to: " + xliff_file_path) + ", shutting down...")
+    enable_all_buttons()
     sys.exit()
 
     # Create the main window
 
 
+def run_script():
+    disable_all_buttons()
+
+    def main_logic():
+        excel_to_xliff()
+        enable_all_buttons()
+
+    try:
+        main_thread = threading.Thread(target=main_logic)
+        main_thread.start()
+    except Exception as exp:
+        # Show popup window with error message
+        messagebox.showerror("Error", str(exp))
+        enable_all_buttons()
+
+
+
 window = tk.Tk()
 window.title(script_name_short)
-window.geometry("700x355")
+window.geometry("700x300")
 
 # Create a button to select the Excel file
 select_button = tk.Button(window, text="Select Excel File", command=select_excel_file)
@@ -202,20 +239,16 @@ path_entry = tk.Entry(window, width=80)
 path_entry.grid(row=0, column=1, padx=10, pady=10, sticky='w')
 
 # Create a button to select the XLIFF file
-select_button = tk.Button(window, text="Save XLIFF to", command=select_xliff_file)
-select_button.grid(row=1, column=0, padx=10, pady=10, sticky='w')
+save_button = tk.Button(window, text="Save XLIFF to", command=select_xliff_file)
+save_button.grid(row=1, column=0, padx=10, pady=10, sticky='w')
 
 # Create a text field to display the selected file path
 path_entry_xliff = tk.Entry(window, width=80)
 path_entry_xliff.insert(tk.END, xliff_file_path)  # Insert the default value from xliff_file_path
 path_entry_xliff.grid(row=1, column=1, padx=10, pady=10, sticky='w')
 
-# Create a button to get headers
-check_button = tk.Button(window, text="Read XLSX headers", command=get_headers)
-check_button.grid(row=2, column=0, padx=10, pady=10, sticky='w')
-
 # Create a button to save to xliff
-check_button = tk.Button(window, text="Save to XLIFF", command=excel_to_xliff)
+check_button = tk.Button(window, text="Save to XLIFF", command=run_script)
 check_button.grid(row=6, column=0, padx=10, pady=10, sticky='w')
 
 # Create a label for the dropdown menu
@@ -257,12 +290,24 @@ inline_tags_regex = r'(<.+?>)|(%[sdmyY])|({\d})|\((\+{\d})\)|({[A-Z]})|(\[[a-zA-
 regex_entry.insert(tk.END, inline_tags_regex)
 
 
+def disable_all_buttons():
+    select_button.config(state=tk.DISABLED)
+    check_button.config(state=tk.DISABLED)
+    save_button.config(state=tk.DISABLED)
+
+
+def enable_all_buttons():
+    select_button.config(state=tk.NORMAL)
+    check_button.config(state=tk.NORMAL)
+    save_button.config(state=tk.NORMAL)
+
+
 # Text in the bottom
 def open_url(url):
     webbrowser.open(url)
 
 
-about_label = tk.Label(window, text="github.com/wtigga\nVladimir Zhdanov", fg="blue", cursor="hand2", justify="left")
+about_label = tk.Label(window, text="github.com/wtigga", fg="blue", cursor="hand2", justify="left")
 about_text = tk.Label(window, text=script_name)
 about_text.grid(row=25, column=1, sticky='w', padx=20, pady=0)
 about_label.bind("<Button-1>",
