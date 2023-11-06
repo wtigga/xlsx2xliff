@@ -1,6 +1,5 @@
 import os
 import re
-import sys
 import threading
 import tkinter as tk
 import webbrowser
@@ -13,31 +12,66 @@ from tkinter import ttk
 
 import pandas as pd
 
-script_version = '0.2'
-modification_date = '2023-10-30'
+script_version = '0.3'
+modification_date = '2023-11-06'
 script_name_short = 'Excel2XLIFF'
 script_name = str(script_name_short + ', v' + script_version + ', ' + modification_date)
 
-# Get the current timestamp in the format YYYYMMDDhhmmss
-timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
-# Specify the output file name
-output_filename = f"output_xliff_{timestamp}.xliff"
+def get_new_filename():
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    output_filename = f"output_xliff_{timestamp}.xliff"
+    xliff_file_path = os.path.join(script_dir, output_filename)
+    return xliff_file_path
+
 
 # Get the path to the script's main folder
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
-# List of source columns
-
 headers_list = ["Column 1", "Column 2", "Column 3"]
 excel_file_path = ''
-xliff_file_path = os.path.join(script_dir, output_filename)
+xliff_file_path = get_new_filename()
 # Variable to store the selected source column
 source_column = ""
 target_column = ""
-source_lang_code = 'ZH_CN'
-target_lang_code = 'RU_RU'
+source_lang_code = 'zh_CN'
+target_lang_code = 'ru_RU'
 additional_columns = ['TextId', 'EXTRA']
+
+locale_codes = [
+    'en_US',  # English (United States)
+    'zh_CN',  # Chinese (Simplified, China)
+    'zh_HK',  # Chinese Hong Kong
+    'zh_TW',  # Chinese Taiwan
+    'es_ES',  # Spanish (Spain)
+    'en_GB',  # English (United Kingdom)
+    'pt_BR',  # Portuguese (Brazil)
+    'hi_IN',  # Hindi (India)
+    'ar_SA',  # Arabic (Saudi Arabia)
+    'bn_BD',  # Bengali (Bangladesh)
+    'ru_RU',  # Russian (Russia)
+    'ja_JP',  # Japanese (Japan)
+    'ko_KR',  # Korean (South Korea)
+    'fr_FR',  # French (France)
+    'de_DE',  # German (Germany)
+    'it_IT',  # Italian (Italy)
+    'tr_TR',  # Turkish (Turkey)
+    'vi_VN',  # Vietnamese (Vietnam)
+    'pl_PL',  # Polish (Poland)
+    'th_TH',  # Thai (Thailand)
+    'uk_UA',  # Ukrainian (Ukraine)
+    'pa_IN',  # Punjabi (India)
+    'ta_IN',  # Tamil (India)
+    'mr_IN',  # Marathi (India)
+    'jv_ID',  # Javanese (Indonesia)
+    'te_IN',  # Telugu (India)
+    'el_GR',  # Greek (Greece)
+    'nl_NL',  # Dutch (Netherlands)
+    'sv_SE',  # Swedish (Sweden)
+    'cs_CZ',  # Czech (Czech Republic)
+    'ro_RO',  # Romanian (Romania)
+    'fa_IR',  # Persian (Iran)
+]
 
 
 def select_excel_file():
@@ -47,11 +81,22 @@ def select_excel_file():
         global excel_file_path
         disable_all_buttons()
         excel_file_path = filedialog.askopenfilename(filetypes=[("Excel Files", "*.xlsx;*.xls")])
-        path_entry.delete(0, tk.END)  # Clear the current text in the entry field
-        path_entry.insert(tk.END, excel_file_path)  # Insert the selected file path
-        get_headers()
-        print('File selected: ' + str(excel_file_path))
-        enable_all_buttons()
+        if not excel_file_path:
+            messagebox.showinfo("No file selected",
+                                "You haven't select a file. Please select Excel file first.")
+            enable_all_buttons()
+        else:
+            file_size = os.path.getsize(excel_file_path)
+            print(f"File size: {file_size} bytes)")
+            if file_size > 5000000:
+                messagebox.showinfo("Large file detected",
+                                    f"The size of the file is more than 5 MB. "
+                                    f"The processing might take some time. Wait patiently.")
+            path_entry.delete(0, tk.END)  # Clear the current text in the entry field
+            path_entry.insert(tk.END, excel_file_path)  # Insert the selected file path
+            get_headers()
+            print('File selected: ' + str(excel_file_path))
+            # enable_all_buttons()
 
     try:
         main_thread = threading.Thread(target=main_logic)
@@ -59,6 +104,7 @@ def select_excel_file():
     except Exception as exp:
         # Show popup window with error message
         messagebox.showerror("Error", str(exp))
+        enable_all_buttons()
 
 
 def select_xliff_file():
@@ -66,7 +112,7 @@ def select_xliff_file():
     xliff_file_path = filedialog.asksaveasfilename(
         defaultextension=".xliff",
         filetypes=[("XLIFF files", "*.xliff")],
-        initialfile=output_filename)
+        initialfile=get_new_filename())
     path_entry_xliff.delete(0, tk.END)  # Clear the current text in the entry field
     path_entry_xliff.insert(tk.END, xliff_file_path)  # Insert the selected file path
     print('XLIFF output selected: ' + str(xliff_file_path))
@@ -101,6 +147,20 @@ def on_target_column_select(event):
     print('Target column set as ' + selected_target_column)
 
 
+def on_target_lang_select(event):
+    global target_lang_code
+    selected_target_language = target_lang_code_selector.get()
+    target_lang_code = selected_target_language
+    print('Target language code set as ' + selected_target_language)
+
+
+def on_source_lang_select(event):
+    global source_lang_code
+    selected_source_language = source_lang_code_selector.get()
+    source_lang_code = selected_source_language
+    print('Source language set as ' + selected_source_language)
+
+
 def update_source_column_combobox():
     source_column_combobox['values'] = headers_list
 
@@ -111,20 +171,34 @@ def update_target_column_combobox():
 
 def get_headers():
     global headers_list
+
+    def main():
+        try:
+            global headers_list
+            # Read all sheets into a dictionary of DataFrames
+            all_sheets = pd.read_excel(excel_file_path, sheet_name=None, header=0)
+
+            # Combine all sheets into a single DataFrame
+            combined_df = pd.concat(all_sheets.values(), ignore_index=True)
+
+            # Get the header as a list
+            headers_list = list(combined_df.columns)
+            update_source_column_combobox()
+            update_target_column_combobox()
+            print(headers_list)
+            enable_all_buttons()
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+            enable_all_buttons()
+
     try:
-        # Read all sheets into a dictionary of DataFrames
-        all_sheets = pd.read_excel(excel_file_path, sheet_name=None, header=0)
-
-        # Combine all sheets into a single DataFrame
-        combined_df = pd.concat(all_sheets.values(), ignore_index=True)
-
-        # Get the header as a list
-        headers_list = list(combined_df.columns)
-        update_source_column_combobox()
-        update_target_column_combobox()
-        print(headers_list)
-    except Exception as e:
-        messagebox.showerror("Error", str(e))
+        disable_all_buttons()
+        main_thread = threading.Thread(target=main)
+        main_thread.start()
+    except Exception as exp:
+        # Show popup window with error message
+        messagebox.showerror("Error", str(exp))
+        enable_all_buttons()
 
 
 def excel_to_xliff():
@@ -134,9 +208,8 @@ def excel_to_xliff():
     global target_lang_code
     global excel_file_path
     global additional_columns
-
-    source_lang_code = source_column
-    target_lang_code = target_column
+    global source_lang_code
+    global target_lang_code
     all_sheets = pd.read_excel(excel_file_path, sheet_name=None, header=0)
     combined_df = pd.concat(all_sheets.values(), ignore_index=True)
     xliff = ET.Element('xliff', version="1.2", xmlns='urn:oasis:names:tc:xliff:document:1.2')
@@ -202,11 +275,15 @@ def excel_to_xliff():
     # Save the formatted XML as an XLIFF file
     with open(xliff_file_path, 'w', newline='\n', encoding='utf-8') as file:
         file.write(xml_str_prettified)
-    messagebox.showinfo("XLIFF Saved", ("Saved to: " + xliff_file_path) + ", shutting down...")
+    messagebox.showinfo("XLIFF Saved", ("Saved to: " + xliff_file_path) + ".")
     enable_all_buttons()
-    sys.exit()
 
-    # Create the main window
+    source_column = ""
+    target_column = ""
+    source_lang_code = ""
+    target_lang_code = ""
+    excel_file_path = ""
+    additional_columns = ""
 
 
 def run_script():
@@ -225,10 +302,9 @@ def run_script():
         enable_all_buttons()
 
 
-
 window = tk.Tk()
 window.title(script_name_short)
-window.geometry("700x300")
+window.geometry("720x300")
 
 # Create a button to select the Excel file
 select_button = tk.Button(window, text="Select Excel File", command=select_excel_file)
@@ -260,14 +336,32 @@ source_column_combobox = ttk.Combobox(window, values=headers_list, state="readon
 source_column_combobox.grid(row=3, column=1, padx=10, pady=5, sticky="w")
 source_column_combobox.bind("<<ComboboxSelected>>", on_source_column_select)
 
+# Dropdown for corresponding language code
+source_lang_label = tk.Label(window, text="Source Language Code:")
+source_lang_label.grid(row=3, column=1, padx=160, pady=5, sticky="w")
+selected_source_language = tk.StringVar()
+source_lang_code_selector = ttk.Combobox(window, values=locale_codes, textvariable=selected_source_language, width=8,
+                                         state="readonly", style='Custom.TCombobox')
+source_lang_code_selector.grid(row=3, column=1, padx=300, pady=5, sticky="w")
+source_lang_code_selector.bind("<<ComboboxSelected>>", on_source_lang_select)
+
 # Create a label for the target dropdown menu
 target_column_label = tk.Label(window, text="Target Language Column:")
 target_column_label.grid(row=4, column=0, padx=10, pady=5, sticky="e")
 
 # Create a dropdown menu for target language column
-target_column_combobox = ttk.Combobox(window, values=headers_list, state="readonly")
+target_column_combobox = ttk.Combobox(window, values=headers_list, state="readonly", style='Custom.TCombobox')
 target_column_combobox.grid(row=4, column=1, padx=10, pady=5, sticky="w")
 target_column_combobox.bind("<<ComboboxSelected>>", on_target_column_select)
+
+# Dropdown for corresponding language code
+target_lang_label = tk.Label(window, text="Target Language Code:")
+target_lang_label.grid(row=4, column=1, padx=160, pady=5, sticky="w")
+selected_target_language = tk.StringVar()
+target_lang_code_selector = ttk.Combobox(window, values=locale_codes, textvariable=selected_target_language, width=8,
+                                         state="readonly", style='Custom.TCombobox')
+target_lang_code_selector.grid(row=4, column=1, padx=300, pady=5, sticky="w")
+target_lang_code_selector.bind("<<ComboboxSelected>>", on_target_lang_select)
 
 checkbox_var = tk.BooleanVar()
 checkbox_var.set(False)  # Default value
