@@ -12,8 +12,8 @@ from tkinter import ttk
 
 import pandas as pd
 
-script_version = '0.3'
-modification_date = '2023-11-06'
+script_version = '0.4'
+modification_date = '2023-11-24'
 script_name_short = 'Excel2XLIFF'
 script_name = str(script_name_short + ', v' + script_version + ', ' + modification_date)
 
@@ -73,6 +73,8 @@ locale_codes = [
     'fa_IR',  # Persian (Iran)
 ]
 
+locale_codes.sort()
+
 
 def select_excel_file():
     global excel_file_path
@@ -81,10 +83,12 @@ def select_excel_file():
         global excel_file_path
         disable_all_buttons()
         excel_file_path = filedialog.askopenfilename(filetypes=[("Excel Files", "*.xlsx;*.xls")])
+        stop_progress()
         if not excel_file_path:
             messagebox.showinfo("No file selected",
                                 "You haven't select a file. Please select Excel file first.")
             enable_all_buttons()
+            stop_progress()
         else:
             file_size = os.path.getsize(excel_file_path)
             print(f"File size: {file_size} bytes)")
@@ -96,7 +100,8 @@ def select_excel_file():
             path_entry.insert(tk.END, excel_file_path)  # Insert the selected file path
             get_headers()
             print('File selected: ' + str(excel_file_path))
-            # enable_all_buttons()
+            #enable_all_buttons()
+            #stop_progress()
 
     try:
         main_thread = threading.Thread(target=main_logic)
@@ -163,10 +168,12 @@ def on_source_lang_select(event):
 
 def update_source_column_combobox():
     source_column_combobox['values'] = headers_list
+    source_column_combobox.current(0)
 
 
 def update_target_column_combobox():
     target_column_combobox['values'] = headers_list
+    target_column_combobox.current(0)
 
 
 def get_headers():
@@ -175,6 +182,7 @@ def get_headers():
     def main():
         try:
             global headers_list
+            start_progress()
             # Read all sheets into a dictionary of DataFrames
             all_sheets = pd.read_excel(excel_file_path, sheet_name=None, header=0)
 
@@ -183,13 +191,16 @@ def get_headers():
 
             # Get the header as a list
             headers_list = list(combined_df.columns)
+            headers_list.sort()
             update_source_column_combobox()
             update_target_column_combobox()
             print(headers_list)
             enable_all_buttons()
+            stop_progress()
         except Exception as e:
             messagebox.showerror("Error", str(e))
             enable_all_buttons()
+            stop_progress()
 
     try:
         disable_all_buttons()
@@ -199,6 +210,7 @@ def get_headers():
         # Show popup window with error message
         messagebox.showerror("Error", str(exp))
         enable_all_buttons()
+        stop_progress()
 
 
 def excel_to_xliff():
@@ -288,10 +300,12 @@ def excel_to_xliff():
 
 def run_script():
     disable_all_buttons()
+    start_progress()
 
     def main_logic():
         excel_to_xliff()
         enable_all_buttons()
+        stop_progress()
 
     try:
         main_thread = threading.Thread(target=main_logic)
@@ -300,6 +314,7 @@ def run_script():
         # Show popup window with error message
         messagebox.showerror("Error", str(exp))
         enable_all_buttons()
+        stop_progress()
 
 
 window = tk.Tk()
@@ -324,8 +339,21 @@ path_entry_xliff.insert(tk.END, xliff_file_path)  # Insert the default value fro
 path_entry_xliff.grid(row=1, column=1, padx=10, pady=10, sticky='w')
 
 # Create a button to save to xliff
-check_button = tk.Button(window, text="Save to XLIFF", command=run_script)
+check_button = tk.Button(window, text="Convert to XLIFF", command=run_script)
 check_button.grid(row=6, column=0, padx=10, pady=10, sticky='w')
+
+progress_var = tk.IntVar(value=0)
+progress = ttk.Progressbar(window, orient='horizontal', length=300, mode='determinate')
+progress.grid(row=6, column=1, padx=10, pady=10, columnspan=2, sticky='w')
+
+def start_progress():
+    progress['mode'] = 'indeterminate'  # enable the never ending 'progress' animation
+    progress.start(10)
+
+
+def stop_progress():
+    progress.stop()
+    progress['mode'] = 'determinate'  # disable the animation
 
 # Create a label for the dropdown menu
 source_column_label = tk.Label(window, text="Source Language Column:")
