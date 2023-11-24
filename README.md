@@ -1,7 +1,7 @@
 # xlsx2xliff
 ### Convert Bilingual Excel Files to XLIFF with a GUI
 
-![image](https://github.com/wtigga/xlsx2xliff/assets/7037184/e3124d6b-ade6-455d-ba2b-35f245104bae)
+![image](https://github.com/wtigga/xlsx2xliff/assets/7037184/64eaecfd-6c92-486a-872f-b2f046980c92)
 
 ## Description
 
