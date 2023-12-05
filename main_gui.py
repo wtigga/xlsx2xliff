@@ -12,8 +12,8 @@ from tkinter import ttk
 
 import pandas as pd
 
-script_version = '0.4'
-modification_date = '2023-11-24'
+script_version = '0.5'
+modification_date = '2023-12-05'
 script_name_short = 'Excel2XLIFF'
 script_name = str(script_name_short + ', v' + script_version + ', ' + modification_date)
 
@@ -63,7 +63,7 @@ locale_codes = [
     'pa_IN',  # Punjabi (India)
     'ta_IN',  # Tamil (India)
     'mr_IN',  # Marathi (India)
-    'jv_ID',  # Javanese (Indonesia)
+    'id_ID',  # Indonesia
     'te_IN',  # Telugu (India)
     'el_GR',  # Greek (Greece)
     'nl_NL',  # Dutch (Netherlands)
@@ -171,6 +171,7 @@ def update_source_column_combobox():
     source_column_combobox.current(0)
 
 
+
 def update_target_column_combobox():
     target_column_combobox['values'] = headers_list
     target_column_combobox.current(0)
@@ -230,8 +231,8 @@ def excel_to_xliff():
     file_elem = ET.SubElement(xliff, 'file', id=current_time, original=file_name, datatype='plaintext',
                               sourceLang=source_lang_code, targetLang=target_lang_code)
     for index, row in combined_df.iterrows():
-        source_text = row[source_column]
-        target_text = row[target_column]
+        source_text = row[source_column_var.get()]
+        target_text = row[target_column_var.get()]
 
         # Convert nan values to None
         if pd.isnull(source_text):
@@ -360,7 +361,8 @@ source_column_label = tk.Label(window, text="Source Language Column:")
 source_column_label.grid(row=3, column=0, padx=10, pady=5, sticky="e")
 
 # Create a dropdown menu for source language column
-source_column_combobox = ttk.Combobox(window, values=headers_list, state="readonly")
+source_column_var = tk.StringVar()
+source_column_combobox = ttk.Combobox(window, values=headers_list, textvariable=source_column_var, state="readonly")
 source_column_combobox.grid(row=3, column=1, padx=10, pady=5, sticky="w")
 source_column_combobox.bind("<<ComboboxSelected>>", on_source_column_select)
 
@@ -378,7 +380,8 @@ target_column_label = tk.Label(window, text="Target Language Column:")
 target_column_label.grid(row=4, column=0, padx=10, pady=5, sticky="e")
 
 # Create a dropdown menu for target language column
-target_column_combobox = ttk.Combobox(window, values=headers_list, state="readonly", style='Custom.TCombobox')
+target_column_var = tk.StringVar()
+target_column_combobox = ttk.Combobox(window, values=headers_list, textvariable=target_column_var, state="readonly", style='Custom.TCombobox')
 target_column_combobox.grid(row=4, column=1, padx=10, pady=5, sticky="w")
 target_column_combobox.bind("<<ComboboxSelected>>", on_target_column_select)
 
