@@ -13,7 +13,7 @@ from tkinter import ttk
 import pandas as pd
 
 script_version = '0.5'
-modification_date = '2023-12-05'
+modification_date = '2023-12-12'
 script_name_short = 'Excel2XLIFF'
 script_name = str(script_name_short + ', v' + script_version + ', ' + modification_date)
 
@@ -252,12 +252,13 @@ def excel_to_xliff():
         # Create the source element and set the source text if it is not None
         if source_text is not None:
             source_elem = ET.SubElement(trans_unit, 'source')
-            source_elem.text = source_text
+            source_elem.text = str(source_text)
 
         # Create the target element and set the target text if it is not None
         if target_text is not None:
             target_elem = ET.SubElement(trans_unit, 'target')
             if isinstance(target_text, str):
+                target_text = str(target_text)
                 if target_text.strip().lower() != 'nan':
                     target_elem.text = target_text.strip()
                     target_elem.set('state', 'translated')
@@ -272,7 +273,7 @@ def excel_to_xliff():
             note_elem = ET.SubElement(trans_unit, 'note')
             note_elem.text = note_content
         else:
-            print("Warning: No additional columns found or columns not found in the DataFrame.")
+            print("No extra info found (and that's fine, you can ignore it).")
 
         # Create the XML tree
     xml_tree = ET.ElementTree(xliff)
